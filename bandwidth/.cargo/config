@@ -1,0 +1,7 @@
+[build]
+rustc = "rustc"           # the rust compiler tool
+target = "x86_64-unknown-linux-musl"         # build for the target triple (ignored by `cargo install`)
+rustflags = [
+    "-C",
+    "target-cpu=broadwell",
+]  # custom flags to pass to all compiler invocations
