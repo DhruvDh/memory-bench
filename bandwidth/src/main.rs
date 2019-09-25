@@ -6,8 +6,8 @@ use packed_simd::{u8x32};
 use std::time::Instant;
 use std::thread;
 
-const NUM_LOOPS: usize = 100_000;
-const NUM_THREADS: usize = 8;
+const NUM_LOOPS: usize = 1_000_000;
+const NUM_THREADS: usize = 16;
 const NUM_OF_256BIT_VECTORS: usize = 512;
 
 #[inline(always)]
@@ -44,7 +44,7 @@ fn main() {
         let i: i32 = std::env::args().nth(1).unwrap().parse::<i32>().unwrap();
         let mut threads = vec![];
         let multiplier = 2f32.powi(i);
-        println!("Size is {:?} kB x {}", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+        println!("Size is {:?} kB (x {})", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
         for _ in 0..NUM_THREADS {
             let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
@@ -63,11 +63,11 @@ fn main() {
         println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
     }
     else {
-        let time_taken: f32 = (0..5).map(|i| {
+        let time_taken: f32 = (0..12).map(|i| {
             let mut threads = vec![];
             let multiplier = 2f32.powi(i);
 
-            println!("Size is {:?} kB x {}", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+            println!("Size is {:?} kB (x {})", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
             for _ in 0..NUM_THREADS {
                 let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
