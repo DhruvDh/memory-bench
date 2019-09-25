@@ -1,36 +1,59 @@
-#![feature(mem_take)]
-
 use rand::prelude::*;
 use rayon;
 use packed_simd::{u8x32};
 use std::time::Instant;
 use std::thread;
 
-const NUM_LOOPS: usize = 1_000_000;
-const NUM_THREADS: usize = 16;
+const NUM_LOOPS: usize = 1000;
+const NUM_THREADS: usize = 4;
 const NUM_OF_256BIT_VECTORS: usize = 512;
 
 #[inline(always)]
 fn do_read_write (len: usize) -> f32 {
-    let mut rng = rand::thread_rng();
+    let len = len / 2;
 
-    // creates a vector of 999 (32 lane unsigned 8 bit) integers
-    let mut random_ints: Vec<u8x32> = (0..len).map(|_| {
-        let num: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
+    let mut source: Vec<u8x32> = (0..len).map(|_| {
+        let num: Vec<u8> = (0..32).map(|_| 1u8).collect();
         u8x32::from_slice_aligned(&num)
     }).collect();
 
-    let rotate_by = {
-        let num: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
-        u8x32::from_slice_unaligned(&num)
-    };
+    let mut dest: Vec<u8x32> = (0..len).map(|_| {
+        let num: Vec<u8> = (0..32).map(|_| 0u8).collect();
+        u8x32::from_slice_aligned(&num)
+    }).collect();
 
+    let now = Instant::now();
+
+    for _ in 0..NUM_LOOPS {
+        for (s, d) in source.iter_mut().zip(dest.iter_mut()) {
+            std::mem::swap(s, d);
+        }
+    }
+
+    let time_taken = now.elapsed().as_secs_f32();
+    dbg!(&source);
+    dbg!(&dest);
+
+    time_taken
+}
+
+#[inline(always)]
+fn do_read (len: usize) -> f32 {
+    // creates a vector of 999 (32 lane unsigned 8 bit) integers
+    let mut random_ints: Vec<u8x32> = (0..len).map(|_| {
+        let num: Vec<u8> = (0..32).map(|_| 1u8).collect();
+        u8x32::from_slice_aligned(&num)
+    }).collect();
+
+    let zeros: Vec<u8> = (0..32).map(|_| 0u8).collect();
+    let mut sum = u8x32::from_slice_aligned(&zeros);
     let now = Instant::now();
     
     for _ in 0..NUM_LOOPS {
         for nums in random_ints.iter_mut() {
-            *nums = nums.rotate_left(rotate_by);
+            sum += *nums;
         }
+        random_ints[0] -= sum;
     }
 
     let time_taken = now.elapsed().as_secs_f32();
@@ -44,7 +67,8 @@ fn main() {
         let i: i32 = std::env::args().nth(1).unwrap().parse::<i32>().unwrap();
         let mut threads = vec![];
         let multiplier = 2f32.powi(i);
-        println!("Size is {:?} kB (x {})", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+
+        println!("{}. Size is {:?} kB (x {})", i, (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
         for _ in 0..NUM_THREADS {
             let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
@@ -63,15 +87,70 @@ fn main() {
         println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
     }
     else {
-        let time_taken: f32 = (0..12).map(|i| {
+        let time_taken: f32 = (0..10).map(|i| {
             let mut threads = vec![];
             let multiplier = 2f32.powi(i);
 
-            println!("Size is {:?} kB (x {})", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+            println!("{}. Size is {:?} kB (x {})", i, (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
             for _ in 0..NUM_THREADS {
                 let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
                 threads.push(thread::spawn(move || do_read_write(size.clone())))
+            }
+
+            let time_taken: f32 = threads.into_iter()
+                                    .map(|t| t.join().unwrap())
+                                    .sum();
+
+            let avg_time = time_taken / (NUM_THREADS as f32);
+            println!("{:?} seconds.", avg_time);
+
+            let memory_used = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32;
+            let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/avg_time;
+
+            println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
+            println!("\n\n");
+            time_taken/(NUM_THREADS as f32)
+        }).sum();
+
+        dbg!(&time_taken);
+    }
+
+
+    println!("-------- Read ----------");
+    if std::env::args().len() > 1 {
+        let i: i32 = std::env::args().nth(1).unwrap().parse::<i32>().unwrap();
+        let mut threads = vec![];
+        let multiplier = 2f32.powi(i);
+
+        println!("{}. Size is {:?} kB (x {})", i, (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+
+        for _ in 0..NUM_THREADS {
+            let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
+            threads.push(thread::spawn(move || do_read(size.clone())))
+        }
+
+        let time_taken: f32 = threads.into_iter()
+                                .map(|t| t.join().unwrap())
+                                .sum();
+        
+        let avg_time = time_taken / (NUM_THREADS as f32);
+        println!("{:?} seconds.", avg_time);
+
+        let memory_used = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32;
+        let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/avg_time;
+        println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
+    }
+    else {
+        let time_taken: f32 = (0..10).map(|i| {
+            let mut threads = vec![];
+            let multiplier = 2f32.powi(i);
+
+            println!("{}. Size is {:?} kB (x {})", i, (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
+
+            for _ in 0..NUM_THREADS {
+                let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
+                threads.push(thread::spawn(move || do_read(size.clone())))
             }
 
             let time_taken: f32 = threads.into_iter()
