@@ -17,7 +17,7 @@ fn do_read_write (len: usize) -> f32 {
     // creates a vector of 999 (32 lane unsigned 8 bit) integers
     let mut random_ints: Vec<u8x32> = (0..len).map(|_| {
         let num: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
-        u8x32::from_slice_unaligned(&num)
+        u8x32::from_slice_aligned(&num)
     }).collect();
 
     let rotate_by = {
@@ -44,7 +44,7 @@ fn main() {
         let i: i32 = std::env::args().nth(1).unwrap().parse::<i32>().unwrap();
         let mut threads = vec![];
         let multiplier = 2f32.powi(i);
-        println!("Size is {:?} kB.", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024);
+        println!("Size is {:?} kB x {}", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
         for _ in 0..NUM_THREADS {
             let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
@@ -55,10 +55,11 @@ fn main() {
                                 .map(|t| t.join().unwrap())
                                 .sum();
         
-        println!("{:?} seconds.", time_taken/(NUM_THREADS as f32));
-        
+        let avg_time = time_taken / (NUM_THREADS as f32);
+        println!("{:?} seconds.", avg_time);
+
         let memory_used = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32;
-        let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/time_taken;
+        let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/avg_time;
         println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
     }
     else {
@@ -66,7 +67,7 @@ fn main() {
             let mut threads = vec![];
             let multiplier = 2f32.powi(i);
 
-            println!("Size is {:?} kB.", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024);
+            println!("Size is {:?} kB x {}", (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32/ 1024, NUM_THREADS);
 
             for _ in 0..NUM_THREADS {
                 let size = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize;
@@ -76,14 +77,12 @@ fn main() {
             let time_taken: f32 = threads.into_iter()
                                     .map(|t| t.join().unwrap())
                                     .sum();
-            
-            println!("{:?} seconds.", time_taken/(NUM_THREADS as f32));
 
-            dbg!(&multiplier);            
-            dbg!((NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32);
+            let avg_time = time_taken / (NUM_THREADS as f32);
+            println!("{:?} seconds.", avg_time);
+
             let memory_used = (NUM_OF_256BIT_VECTORS as f32 * multiplier) as usize * 32;
-            dbg!(((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/time_taken);
-            let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/time_taken;
+            let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS)  as f32)/avg_time;
 
             println!("Bandwidth is {:?} GBps.", bandwidth / (10e9));
             println!("\n\n");
