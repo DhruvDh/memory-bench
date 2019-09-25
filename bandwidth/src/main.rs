@@ -7,9 +7,8 @@ use std::time::Instant;
 use std::thread;
 
 const NUM_LOOPS: usize = 100_000;
-const SAMPLE_SIZE: usize = 10;
-const NUM_THREADS: usize = 4;
-const NUM_OF_256BIT_VECTORS: usize = 1023 * 128;
+const NUM_THREADS: usize = 8;
+const NUM_OF_256BIT_VECTORS: usize = 1023 * 8;
 
 #[inline(always)]
 fn do_read_write (len: usize) -> f32 {
@@ -42,26 +41,28 @@ fn do_read_write (len: usize) -> f32 {
 }
 
 fn main() {
-    let time_taken: f32 = (0..SAMPLE_SIZE).map(|_| {
+    let time_taken: f32 = (1..21).map(|i| {
         let mut threads = vec![];      
 
         for _ in 0..NUM_THREADS {
-            threads.push(thread::spawn(|| do_read_write(NUM_OF_256BIT_VECTORS)))
+            let size = NUM_OF_256BIT_VECTORS * i;
+            threads.push(thread::spawn(move || do_read_write(size.clone())))
         }
 
         let time_taken: f32 = threads.into_iter()
                                 .map(|t| t.join().unwrap())
                                 .sum();
         
+        println!("Size is {:?} kB.", (NUM_OF_256BIT_VECTORS * i * 32 / 1024));
         println!("{:?} seconds.", time_taken/(NUM_THREADS as f32));
+        
+        let memory_used = NUM_OF_256BIT_VECTORS * 32;
+        let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS) as f32)/time_taken;
+        let bandwidth = bandwidth / (1024 * 1024 * 1024) as f32;
+        println!("Bandwidth is {:?} GBps.", bandwidth);
+        println!("/n/n");
         time_taken/(NUM_THREADS as f32)
     }).sum();
 
-    let avg_time = time_taken/(SAMPLE_SIZE as f32);
-    println!("Avg. time for each thread is {:?} seconds.", avg_time);
-
-    let memory_used = NUM_OF_256BIT_VECTORS * 32;
-    let bandwidth = ((memory_used * NUM_LOOPS * NUM_THREADS) as f32)/avg_time;
-    let bandwidth = bandwidth / (1024 * 1024 * 1024) as f32;
-    println!("Bandwidth is {:?} GBps.", bandwidth);
+    dbg!(&time_taken);
 }
