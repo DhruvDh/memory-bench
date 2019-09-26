@@ -1,0 +1,74 @@
+fn do_read(size: usize) -> f32 {   
+    let mut rng = thread_rng();
+    let mut A = [0u64; 8];
+    rng.fill(&mut A);
+
+    let mut nums = vec![];
+    nums.push(&A);
+
+    nums = nums.iter()
+               .cycle()
+               .take(size)
+               .map(|c| *c)
+               .collect();
+    
+    let mut out = [0u64; 8];
+    // dbg!(&nums);
+
+
+    let now = Instant::now();
+    unsafe {
+        std::intrinsics::prefetch_read_data(&nums, 3);
+        for _ in 0..NUM_LOOPS {
+            for i in &nums {
+                asm!("
+                    mov $0, $8
+                    mov $0, $9
+                    mov $0, $10
+                    mov $0, $11
+                    mov $0, $12
+                    mov $0, $13
+                    mov $0, $14
+                    mov $0, $15
+
+                    mov $0, $8
+                    mov $0, $9
+                    mov $0, $10
+                    mov $0, $11
+                    mov $0, $12
+                    mov $0, $13
+                    mov $0, $14
+                    mov $0, $15
+
+                    mov $0, $8
+                    mov $0, $9
+                    mov $0, $10
+                    mov $0, $11
+                    mov $0, $12
+                    mov $0, $13
+                    mov $0, $14
+                    mov $0, $15
+
+                    mov $0, $8
+                    mov $0, $9
+                    mov $0, $10
+                    mov $0, $11
+                    mov $0, $12
+                    mov $0, $13
+                    mov $0, $14
+                    mov $0, $15
+                "
+                    : "=r"(out[0]), "=r"(out[1]), "=r"(out[2]), "=r"(out[3]),
+                      "=r"(out[4]), "=r"(out[5]), "=r"(out[6]), "=r"(out[7])
+                    : "m"(i[0]), "m"(i[1]), "m"(i[2]), "m"(i[3]),
+                      "m"(i[4]), "m"(i[5]), "m"(i[6]), "m"(i[7])
+                );
+            }
+        }
+    };
+    let time_taken = now.elapsed().as_secs_f32();
+
+    dbg!(&out);
+    println!("{:?}", (size * NUM_LOOPS * 32 * 64) as f32/ (time_taken * 10e9));
+    time_taken
+}
