@@ -154,7 +154,7 @@ fn main() {
                                     .sum();
             
             let mem = SIZE { n: size };
-            let total_mem = SIZE { n: (size * NUM_THREADS) };
+            let total_mem = SIZE { n: (size * NUM_THREADS * 2) };
 
             println!("READ {} per thread. Total {} @ {} GBps for {} threads.", mem, total_mem, bandwidths, (NUM_THREADS * 2));
         }
