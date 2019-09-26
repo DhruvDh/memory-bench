@@ -12,7 +12,7 @@ const NUM_LOOPS_4: usize = 100;
 
 const START_SIZE: usize = 2;
 const UP_TO: usize = 23;
-const NUM_THREADS: usize = 4;
+const NUM_THREADS: usize = 16;
 
 struct SIZE {
     n: usize
@@ -139,8 +139,24 @@ fn main() {
             let mem = SIZE { n: size };
             let total_mem = SIZE { n: (size * NUM_THREADS) };
 
-            println!("READ {} in {} threads each. Total {} @ {} GBps", mem, NUM_THREADS, total_mem, bandwidths);
+            println!("READ {} per thread. Total {} @ {} GBps for {} threads.", mem, total_mem, bandwidths, NUM_THREADS);
+
+            let mut threads = vec![];
+            let multiplier = 2f32.powi(i as i32);
+            let size = (START_SIZE as f32 * multiplier) as usize;
+
+            for _ in 0..(NUM_THREADS * 2) {
+                threads.push(thread::spawn(move || do_read(size.clone())))
+            }
+
+            let bandwidths: f32 = threads.into_iter()
+                                    .map(|t| t.join().unwrap())
+                                    .sum();
+            
+            let mem = SIZE { n: size };
+            let total_mem = SIZE { n: (size * NUM_THREADS) };
+
+            println!("READ {} per thread. Total {} @ {} GBps for {} threads.", mem, total_mem, bandwidths, (NUM_THREADS * 2));
         }
     }
-
 }
