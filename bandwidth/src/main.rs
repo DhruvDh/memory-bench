@@ -4,6 +4,8 @@ use std::time::Instant;
 use packed_simd::{u64x4};
 use std::thread;
 use std::fmt;
+use std::fs::File;
+use std::io::Write;
 
 const NUM_LOOPS_1: usize = 100_000;
 const NUM_LOOPS_2: usize = 10_000;
@@ -316,7 +318,7 @@ fn main() {
             println!("READ\t{}\t------\t{} GBps.", mem, bandwidths);
             reads.push((total_mem, bandwidths));
         }
-
+        println!("\n");
         // ------------------- WRITE --------------------------
         for i in 0..UP_TO {
             let multiplier = 2f32.powi(i as i32);
@@ -337,6 +339,7 @@ fn main() {
             println!("WROTE\t{}\t------\t{} GBps.", mem, bandwidths);
             writes.push((total_mem, bandwidths));
         }
+        println!("\n");
 
         // ------------------- READ/WRITE --------------------------
         for i in 0..UP_TO {
@@ -359,8 +362,19 @@ fn main() {
             read_writes.push((total_mem, bandwidths));
         }
     }
+    println!("\n");
+
+    let mut file = File::create("results.tsv").unwrap();
+    writeln!(&mut file, "SIZE\tR\tW\tRW").unwrap();
 
     for ((r, w), rw) in reads.iter().zip(writes.iter()).zip(read_writes.iter()) {
         println!("{}\tR:{}\tW:{}\tR/W:{}", r.0, r.1, w.1, rw.1);
+        writeln!(&mut file, "{}\t{}\t{}\t{}", r.0, r.1, w.1, rw.1).unwrap();
     }    
+
+
+
+
+
+
 }
