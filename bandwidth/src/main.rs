@@ -102,7 +102,7 @@ fn do_read(size: usize) -> f32 {
 
     dbg!(&sum);
 
-    let bandwidth = (size * num_loops * 4 * 8) as f32/ (time_taken * 10e9);
+    let bandwidth = (size * num_loops * 8 * 8) as f32/ (time_taken * 10e9);
     bandwidth
 }
 
@@ -184,7 +184,7 @@ fn do_read_write(size: usize) -> f32 {
     dbg!(&nums_A);
     dbg!(&nums_B);
 
-    let bandwidth = (size * num_loops * 4 * 8) as f32/ (time_taken * 10e9);
+    let bandwidth = (size * num_loops * 8 * 8) as f32/ (time_taken * 10e9);
     bandwidth
 }
 
@@ -249,7 +249,7 @@ fn do_write(size: usize) -> f32 {
 
     dbg!(&nums);
 
-    let bandwidth = (size * num_loops * 4 * 8) as f32/ (time_taken * 10e9);
+    let bandwidth = (size * num_loops * 8 * 8) as f32/ (time_taken * 10e9);
     bandwidth
 }
 
