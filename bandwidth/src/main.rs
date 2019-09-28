@@ -13,7 +13,7 @@ const NUM_LOOPS_3: usize = 1_000;
 const NUM_LOOPS_4: usize = 100;
 
 const START_SIZE: usize = 1;
-const UP_TO: usize = 21;
+const UP_TO: usize = 19;
 const NUM_THREADS: usize = 32;
 
 struct SIZE {
@@ -284,7 +284,6 @@ fn main() {
                                 .sum();
         
         let mem = SIZE { n: size };
-        let total_mem = SIZE { n: (size * NUM_THREADS) };
 
         println!("READ\t{}\t------\t{} GBps.", mem, bandwidths);
 
@@ -300,7 +299,6 @@ fn main() {
                                 .sum();
         
         let mem = SIZE { n: size };
-        let total_mem = SIZE { n: (size * NUM_THREADS) };
 
         println!("WROTE\t{}\t------\t{} GBps.", mem, bandwidths);   
     }
@@ -320,10 +318,9 @@ fn main() {
                                     .sum();
             
             let mem = SIZE { n: size };
-            let total_mem = SIZE { n: (size * NUM_THREADS) };
 
             println!("READ\t{}\t------\t{} GBps.", mem, bandwidths);
-            reads.push((total_mem, bandwidths));
+            reads.push((mem, bandwidths));
         }
         println!("\n");
         // ------------------- WRITE --------------------------
@@ -341,10 +338,9 @@ fn main() {
                                     .sum();
             
             let mem = SIZE { n: size };
-            let total_mem = SIZE { n: (size * NUM_THREADS) };
 
             println!("WROTE\t{}\t------\t{} GBps.", mem, bandwidths);
-            writes.push((total_mem, bandwidths));
+            writes.push((mem, bandwidths));
         }
         println!("\n");
 
@@ -363,10 +359,9 @@ fn main() {
                                     .sum();
             
             let mem = SIZE { n: size };
-            let total_mem = SIZE { n: (size * NUM_THREADS) };
 
             println!("R/WROTE\t{}\t------\t{} GBps.", mem, bandwidths);
-            read_writes.push((total_mem, bandwidths));
+            read_writes.push((mem, bandwidths));
         }
     }
     println!("\n");
