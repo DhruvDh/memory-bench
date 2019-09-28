@@ -12,8 +12,8 @@ const NUM_LOOPS_2: usize = 10_000;
 const NUM_LOOPS_3: usize = 1_000;
 const NUM_LOOPS_4: usize = 100;
 
-const START_SIZE: usize = 2;
-const UP_TO: usize = 23;
+const START_SIZE: usize = 1;
+const UP_TO: usize = 21;
 const NUM_THREADS: usize = 32;
 
 struct SIZE {
@@ -22,7 +22,7 @@ struct SIZE {
 
 impl fmt::Display for SIZE {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let size = self.n * 4 * 64 / 8;
+        let size = self.n * 4 * (64 / 8) * NUM_THREADS;
 
         if (64 - size.leading_zeros()) <= 11 {
             write!(f, "{} B", size)
@@ -52,6 +52,8 @@ fn do_read(size: usize) -> f32 {
                .map(|p| *p)
                .collect();
     
+    nums.shrink_to_fit();
+
     let mut sum = u64x4::new(0, 0, 0, 0);
     let mut num_loops = 0;
 
@@ -128,6 +130,9 @@ fn do_read_write(size: usize) -> f32 {
                .map(|p| *p)
                .collect();
     
+    nums_A.shrink_to_fit();
+    nums_B.shrink_to_fit();
+
     let mut num_loops = 0;
 
     let time_taken = unsafe {
@@ -184,7 +189,7 @@ fn do_read_write(size: usize) -> f32 {
     dbg!(&nums_A);
     dbg!(&nums_B);
 
-    let bandwidth = (size * num_loops * 8 * 8) as f32/ (time_taken * 10e9);
+    let bandwidth = (size * num_loops * 8 * 4) as f32/ (time_taken * 10e9);
     bandwidth
 }
 
@@ -201,6 +206,8 @@ fn do_write(size: usize) -> f32 {
     
     let mut num_loops = 0;
 
+    nums.shrink_to_fit();
+    
     let time_taken = unsafe {
         std::intrinsics::prefetch_write_data(&nums, 3);
         let n = u64x4::new(1, 2, 3, 4);
@@ -371,10 +378,4 @@ fn main() {
         println!("{}\tR:{}\tW:{}\tR/W:{}", r.0, r.1, w.1, rw.1);
         writeln!(&mut file, "{}\t{}\t{}\t{}", r.0, r.1, w.1, rw.1).unwrap();
     }    
-
-
-
-
-
-
 }
