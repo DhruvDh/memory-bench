@@ -14,7 +14,7 @@ const NUM_LOOPS_4: usize = 100;
 
 const START_SIZE: usize = 1;
 const UP_TO: usize = 19;
-const NUM_THREADS: usize = 32;
+const NUM_THREADS: usize = 4;
 
 struct SIZE {
     n: usize
